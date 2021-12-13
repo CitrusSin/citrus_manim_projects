@@ -141,15 +141,15 @@ class Mark(VGroup):
 
 class SeqTrick(Scene):
     def construct(self):
-        self.allowedWaiting = False
-        self.language = languageText["EN"] # Switch the language by modifying here (CH, EN)
-        #self.title()
-        #self.showQuestion()
-        #self.introduction()
-        #self.solveGeneralTerm1()
-        #self.transition()
-        #self.solveGeneralTerm2()
-        #self.transition2()
+        self.allowedWaiting = True
+        self.language = languageText["CH"] # Switch the language by modifying here (CH, EN)
+        self.title()
+        self.showQuestion()
+        self.introduction()
+        self.solveGeneralTerm1()
+        self.transition()
+        self.solveGeneralTerm2()
+        self.transition2()
         self.simplify()
         self.thanks()
 
@@ -463,12 +463,12 @@ class SeqTrick(Scene):
             "\\frac{2}{2-\\lambda}": ORANGE
         }
 
-        equ = Tex("a_{n+2}=2a_{n+1}+2a_{n}", isolate=isolateDict)
-        equ2 = Tex("a_{n+2} - \\lambda a_{n+1} = (2-\\lambda)a_{n+1}+2a_{n}",
+        equ = Tex("a_{n+2}=2a_{n+1}-2a_{n}", isolate=isolateDict)
+        equ2 = Tex("a_{n+2} - \\lambda a_{n+1} = (2-\\lambda)a_{n+1}-2a_{n}",
             isolate=isolateDict,
             tex_to_color_map=lambdaTexColors
         )
-        equ3 = Tex("a_{n+2} - \\lambda a_{n+1} = (2-\\lambda)(a_{n+1}+ \\frac{2}{2-\\lambda} a_{n})",
+        equ3 = Tex("a_{n+2} - \\lambda a_{n+1} = (2-\\lambda)(a_{n+1}- \\frac{2}{2-\\lambda} a_{n})",
             isolate=isolateDict,
             tex_to_color_map=lambdaTexColors
         )
