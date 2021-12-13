@@ -349,7 +349,7 @@ class SeqTrick(Scene):
 
         question = TexText(self.language["question"]).scale(0.5).to_corner(LEFT+UP)
         solveMark = TexText(self.language["solveMark"], color=RED_A).next_to(question, DOWN).to_edge(LEFT)
-        equ = Tex("a_{n+2} - \\lambda a_{n+1} = (2-\\lambda)(a_{n+1}+ \\frac{2}{2-\\lambda} a_{n})",
+        equ = Tex("a_{n+2} - \\lambda a_{n+1} = (2-\\lambda)(a_{n+1}- \\frac{2}{2-\\lambda} a_{n})",
             isolate=isolateDict,
             tex_to_color_map=texColors
         ).next_to(solveMark, RIGHT)
