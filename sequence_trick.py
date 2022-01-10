@@ -88,7 +88,7 @@ languageText = {
         "transition21": 
                     """
                     \\textup{But wait!} \\\\
-                    \\textup{As you see, there's imaginary numbers in the formula.} \\\\
+                    \\textup{As you see, there're imaginary numbers in the formula.} \\\\
                     \\textup{It's weird that all terms are real numbers} \\\\
                     \\textup{And imaginary numbers are in the formula.}
                     """,
@@ -141,7 +141,7 @@ class Mark(VGroup):
 class SeqTrick(Scene):
     def construct(self):
         self.allowedWaiting = True
-        self.language = languageText["CH"] # Switch the language by modifying here (CH, EN)
+        self.language = languageText["EN"] # Switch the language by modifying here (CH, EN)
         self.title()
         self.showQuestion()
         self.introduction()
