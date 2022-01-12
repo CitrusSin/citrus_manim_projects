@@ -1,11 +1,7 @@
 import math
-import numpy as np
+from typing import Any, Dict, List, Optional, Tuple
 from manimlib import *
-from typing import Any, Dict, Tuple, List, Optional
 
-### Util functions and classes BEGIN ##
-
-# Content of my_util_classes/geometry_structure.py
 
 def cmp_unordered(tuple1, tuple2):
     for x in tuple1:
@@ -15,6 +11,7 @@ def cmp_unordered(tuple1, tuple2):
         if y not in tuple1:
             return False
     return True
+
 
 class GeometryStructure(VGroup):
     def __init__(
@@ -174,22 +171,3 @@ class VertexPolygon(GeometryStructure):
         
     def get_grav_center(self):
         return np.sum(self.vertices, axis=0) / len(self.vertices)
-
-
-### Util functions and classes END ##
-
-
-class Vec2Cross(Scene):
-    def construct(self):
-        tri = VertexPolygon((1.5, 3, 0), (-3, -0.5, 0), (3, -1.5, 0), color_index=[RED, GREEN, BLUE]).center().scale(0.8)
-        
-        self.play(ShowCreation(tri))
-
-        tri.add_point('O', tri.get_grav_center())
-        tri.connect('OA', 'OB', 'OC')
-        append_list, remove_list = tri.generate_delta_objects()
-
-        tri.set_dot_color('O', PURPLE)
-        show_list = [ShowCreation(x) for x in append_list]
-        self.play(*show_list)
-        pass
