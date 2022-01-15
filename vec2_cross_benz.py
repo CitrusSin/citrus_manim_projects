@@ -265,9 +265,256 @@ class VertexPolygon(GeometryStructure):
 ### Util functions and classes END ##
 
 
+def cross_vec2(a, b):
+    return a[0]*b[1]-a[1]*b[0]
+
+
 class Vec2Cross(Scene):
     def construct(self):
-        self.showTriangle()
+        self.cross_introduce()
+
+    def cross_introduce(self):
+        title = TexText("平面向量", "的“叉积”").scale(1.2)
+        self.play(Write(title))
+        self.wait(3)
+
+        self.play(title.to_corner, UL)
+        self.play(title[0].set_color, RED)
+
+        self.wait(2)
+
+        title_question = TexText("?", color=RED).scale(1.2)
+        title[1].generate_target()
+        title_question.next_to(title[0], RIGHT)
+        title[1].target.next_to(title_question, RIGHT)
+        self.play(MoveToTarget(title[1]), Write(title_question))
+
+        tip1 = TexText("是不是有点陌生？").scale(0.8).next_to(title, DOWN).to_edge(LEFT)
+        self.play(Write(tip1))
+        self.wait(2)
+
+        title_replacement = TexText("空间向量", color=BLUE).scale(1.2).move_to(title[0])
+        tip1_2 = TexText("那这样呢？").scale(0.8).move_to(tip1).to_edge(LEFT)
+        title[1].generate_target()
+        title[1].target.next_to(title_replacement, RIGHT)
+
+        title0_backup = title[0].copy()
+
+        self.play(
+            Transform(title[0], title_replacement),
+            Transform(tip1, tip1_2),
+            Uncreate(title_question),
+            MoveToTarget(title[1])
+        )
+
+        tip2 = VGroup(
+            TexText("想必大家对这也许有所耳闻，"),
+            TexText("空间向量的叉积可以求出"),
+            TexText("两个向量张成的平面的法向量，"),
+            TexText("而利用法向量可以很快搞定"),
+            TexText("诸如线面角，二面角之类的东西。")
+        ).fix_in_frame().arrange(DOWN).scale(0.6).next_to(tip1, DOWN).to_edge(LEFT)
+        
+        for t in tip2.submobjects:
+            t.to_edge(LEFT)
+        self.play(Write(tip2))
+        self.wait(2)
+
+        tip2.generate_target()
+        tip2.target.next_to(title, DOWN).to_edge(LEFT)
+        self.play(FadeOut(tip1), MoveToTarget(tip2))
+
+        formula = Tex("\\overrightarrow{S}", "=", "\\overrightarrow{a}", "\\times", "\\overrightarrow{b}")
+        formula[0].set_color(GREEN)
+        formula[2].set_color(RED)
+        formula[4].set_color(BLUE)
+
+        formula.fix_in_frame().next_to(tip2, DOWN)
+
+        self.play(Write(formula))
+
+        # Prepare to enter 3D
+
+        title[0].fix_in_frame()
+        title[1].fix_in_frame()
+        title_replacement.fix_in_frame()
+        tip1.fix_in_frame()
+        tip1_2.fix_in_frame()
+
+        # Enter 3D
+
+        axe = ThreeDAxes((-3, 3), (-3, 3), (-3, 3))
+        vecs = np.random.rand(3, 3) * 3 - 1.5
+        vecs[2] = np.cross(vecs[0], vecs[1])
+
+        vec_objs = VGroup(
+            Vector(vecs[0]).set_color(RED),
+            Vector(vecs[1]).set_color(BLUE),
+            Vector(vecs[2]).set_color(GREEN)
+        )
+
+        poly = Polygon(ORIGIN, vecs[0], vecs[0]+vecs[1], vecs[1], stroke_width=1).set_color(GREEN).set_fill(GREEN, 0.6)
+
+        # Configure camera
+
+        camera_update_function = lambda m, dt: m.increment_theta(0.5*dt)
+        self.camera.frame.set_euler_angles(theta=20, phi=20)
+        self.camera.frame.add_updater(camera_update_function)
+        
+        self.play(ShowCreation(axe), ShowCreation(vec_objs), ShowCreation(poly))
+
+        for i in range(3):
+            vecs = np.random.rand(3, 3) * 3 - 1.5
+            vecs[2] = np.cross(vecs[0], vecs[1])
+            for i in range(3):
+                vec_objs[i].target=Vector(vecs[i]).set_color(vec_objs[i].get_color())
+            poly.target = Polygon(ORIGIN, vecs[0], vecs[0]+vecs[1], vecs[1], stroke_width=1).set_color(GREEN).set_fill(GREEN, 0.6)
+            self.play(*[MoveToTarget(vec_objs[i]) for i in range(3)], MoveToTarget(poly))
+            self.wait(2)
+
+        tip3 = VGroup(
+            TexText("但是，两个空间向量叉积"),
+            TexText("不止包含方向信息，"), 
+            TexText("它还有一个模长。")
+        ).fix_in_frame().arrange(DOWN).scale(0.6).next_to(tip2, DOWN).to_edge(LEFT)
+
+        for t in tip3.submobjects:
+            t.to_edge(LEFT)
+        self.play(FadeOut(formula), Write(tip3))
+        self.wait(2)
+
+        tip4 = VGroup(
+            TexText("这个向量的模长，"),
+            TexText("会刚好等于", "绿色平行四边形"),
+            TexText("即两个向量所夹成的平行四边形的面积")
+        ).fix_in_frame().arrange(DOWN).scale(0.6).next_to(tip2, DOWN).to_edge(LEFT)
+        tip4[1][1].set_color(GREEN)
+
+        for t in tip4.submobjects:
+            t.to_edge(LEFT)
+        self.play(ReplacementTransform(tip3, tip4))
+
+        for i in range(2):
+            vecs = np.random.rand(3, 3) * 3 - 1.5
+            vecs[2] = np.cross(vecs[0], vecs[1])
+            for i in range(3):
+                vec_objs[i].target=Vector(vecs[i]).set_color(vec_objs[i].get_color())
+            poly.target = Polygon(ORIGIN, vecs[0], vecs[0]+vecs[1], vecs[1], stroke_width=1).set_color(GREEN).set_fill(GREEN, 0.6)
+            self.play(*[MoveToTarget(vec_objs[i]) for i in range(3)], MoveToTarget(poly))
+            self.wait(2)
+
+        self.camera.frame.remove_updater(camera_update_function)
+        self.play(Uncreate(axe), Uncreate(vec_objs), Uncreate(poly))
+        self.camera.frame.to_default_state()
+
+        self.play(FadeOut(tip4), FadeOut(tip2), Transform(title[0], title0_backup))
+        title[0].fix_in_frame()
+        self.wait(1)
+
+        self.camera.frame.reorient(45, 70, 0)
+
+        tip5 = VGroup(
+            TexText("虽说平面向量没有严格意义上的叉积，"),
+            TexText("但这并不妨碍我们把叉积运算扩展到平面向量上。"),
+        ).fix_in_frame().arrange(DOWN).scale(0.6).next_to(title, DOWN).to_edge(LEFT)
+        for t in tip5.submobjects:
+            t.to_edge(LEFT)
+        self.play(Write(tip5))
+        self.wait(2)
+
+        vecs = VGroup(
+            Vector([1, 0, 0]).set_color(RED),
+            Vector([0, 1, 0]).set_color(BLUE),
+            Vector(np.cross([1,0,0],[0,1,0])).set_color(GREEN)
+        )
+        poly = Polygon(ORIGIN, [1,0,0], [1,1,0], [0,1,0], stroke_width=1, color=GREEN).set_fill(GREEN, 0.6)
+        self.play(ShowCreation(vecs), ShowCreation(poly))
+        self.wait(1)
+        self.play(UpdateFromAlphaFunc(self.camera.frame, lambda m, alpha: m.reorient(45-(45*alpha),70-(70*alpha), 0)))
+
+        vec0 = vecs[0]
+        vec1 = vecs[1]
+        product = vecs[2]
+        area_num = DecimalNumber(1, color=GREEN).move_to([-0.5, -0.5, 0])
+        self.play(ReplacementTransform(product, area_num))
+        self.wait(1)
+
+        tip6 = VGroup(
+            TexText("由于平面向量全都在一个平面内，"),
+            TexText("所以不管怎么做叉积，结果都只有两个方向。"),
+            TexText("为方便起见，这里直接使用实数代替结果向量，"),
+            TexText("以正负来代表结果的两个向量，"),
+            TexText("得到平面向量叉积如下的定义式："),
+            Tex(
+                "\\overrightarrow{a}", "\\times", "\\overrightarrow{b}", "=",
+                "||", "\\overrightarrow{a}", "||\\cdot ||", "\\overrightarrow{b}",
+                "||\\sin \\langle", "\\overrightarrow{a}", ",", "\\overrightarrow{b}",
+                "\\rangle",
+                tex_to_color_map={"\\overrightarrow{a}": RED, "\\overrightarrow{b}": BLUE}
+            )
+        ).fix_in_frame().arrange(DOWN).scale(0.6).next_to(tip5, DOWN).to_edge(LEFT)
+
+        for t in tip6.submobjects:
+            t.to_edge(LEFT)
+            self.play(Write(t))
+
+        vec0.generate_target()
+        vec1.generate_target()
+        vec0.target.put_start_and_end_on(ORIGIN, [1.5, 0, 0])
+        vec1.target.put_start_and_end_on(ORIGIN, [0.5, -0.8, 0])
+        
+        poly.target = Polygon(ORIGIN, [1.5,0,0], [1.5,1,0], [0,1,0], stroke_width=1, color=GREEN).set_fill(GREEN, 0.6)
+        
+        self.play(
+            MoveToTarget(vec0),
+            UpdateFromFunc(area_num, lambda m: m.set_value(cross_vec2(vec0.get_end(), vec1.get_end())).set_color(GREEN)),
+            MoveToTarget(poly)
+        )
+
+        poly.target = Polygon(ORIGIN, [1.5,0,0], [2,-0.8,0], [0.5,-0.8,0], stroke_width=1, color=GREEN).set_fill(GREEN, 0.6)
+
+        self.play(
+            MoveToTarget(vec1),
+            UpdateFromFunc(area_num, lambda m: m.set_value(cross_vec2(vec0.get_end(), vec1.get_end())).set_color(GREEN)),
+            MoveToTarget(poly)
+        )
+
+        tip7 = VGroup(
+            TexText("利用正弦差角公式，我们不难推出，"),
+            TexText("对于$\\overrightarrow{a}=\\begin{bmatrix} x_1 \\\\ y_1 \\end{bmatrix}, \\overrightarrow{b}=\\begin{bmatrix} x_2 \\\\ y_2 \\end{bmatrix}$，"),
+            Tex(
+                "\\overrightarrow{a}", "\\times", "\\overrightarrow{b}", "=",
+                "x_1", "y_2", "-", "x_2", "y_1",
+                tex_to_color_map={
+                    "\\overrightarrow{a}": RED,
+                    "\\overrightarrow{b}": BLUE,
+                    "x_1": RED,
+                    "y_1": RED,
+                    "x_2": BLUE,
+                    "y_2": BLUE
+                }
+            )
+        ).fix_in_frame().arrange(DOWN).scale(0.6).next_to(tip6, DOWN).to_edge(LEFT)
+        
+        for t in tip7.submobjects:
+            t.to_edge(LEFT)
+            self.play(Write(t))
+
+        self.wait(1)
+        
+        formula = tip7[2]
+        tip7.remove(formula)
+        self.play(Uncreate(tip7), Uncreate(tip6), Uncreate(tip5), Uncreate(vecs), Uncreate(area_num), Uncreate(poly), Uncreate(title))
+        
+        formula.generate_target()
+        formula.target.scale(2)
+
+        append_text = TexText("接下来，我们用这个公式推导一些有关“叉积”的性质。").next_to(formula, DOWN, buff=0.5)
+        group = VGroup(formula.target, append_text).center()
+        self.play(MoveToTarget(formula), Write(append_text))
+
+        self.showCountdown(5)
+        self.play(FadeOut(group))
 
     def showTriangle(self):
         tri = VertexPolygon((1.5, 3, 0), (-3, -0.5, 0), (3, -1.5, 0), color_index=[RED, GREEN, BLUE]).center()
@@ -284,4 +531,17 @@ class Vec2Cross(Scene):
         tri.move_dot('O', tri.get_grav_center())
 
         tri.animate_changes(self)
+
+    def showCountdown(self, seconds):
+        countDownObj = Tex(str(seconds), color=BLUE).to_corner(DR)
+
+        self.play(Write(countDownObj))
+        self.wait(0.25)
+
+        for i in range(seconds-1, -1, -1):
+            newObj = Tex(str(i), color=BLUE).to_corner(DR)
+            self.play(Transform(countDownObj, newObj))
+            self.wait(0.25)
+
+        self.play(FadeOut(countDownObj))
         
