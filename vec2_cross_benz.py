@@ -200,6 +200,18 @@ class GeometryStructure(VGroup):
     def get_label(self, name):
         return self.__labels[name]
 
+    def get_line(self, conn):
+        if isinstance(conn, str):
+            conn = (conn[0], conn[1])
+        elif isinstance(conn, list):
+            conn = tuple(conn[0:2])
+        for conn2 in self.__lines.keys():
+            if cmp_unordered(conn, conn2):
+                return self.__lines[conn2]
+
+    def set_line_color(self, name, color):
+        self.get_line(name).set_color(color)
+
     def get_point(self, name):
         return self.__point_dict[name]
 
@@ -228,7 +240,7 @@ class VertexPolygon(GeometryStructure):
         self.__vertex_names = names
 
         def lpfunc(p):
-            delta = p-self.get_grav_center()
+            delta = p-self.get_mass_center()
             len = np.linalg.norm(delta)
             if len<0.05:
                 delta = UR/math.sqrt(2)
@@ -251,7 +263,7 @@ class VertexPolygon(GeometryStructure):
 
         return super().apply_points_function(func, about_point, about_edge, works_on_bounding_box)
         
-    def get_grav_center(self):
+    def get_mass_center(self):
         return np.sum(self.vertices, axis=0) / len(self.vertices)
 
     def move_dot(self, name, point):
@@ -271,7 +283,121 @@ def cross_vec2(a, b):
 
 class Vec2Cross(Scene):
     def construct(self):
-        self.cross_introduce()
+        self.introduce_benz_theorem()
+        #self.cross_introduce()
+        #self.cross_properties()
+
+    def introduce_benz_theorem(self):
+        intro = VGroup(
+            TexText("开头先讲一个定理：奔驰定理"),
+            TexText("这个定理可以说是比较实用。"),
+            TexText("先来看看奔驰定理说了些什么。")
+        ).arrange(DOWN).center()
+
+        self.play(Write(intro))
+        self.wait(4)
+        self.play(FadeOut(intro))
+
+
+        title = TexText("奔驰定理：").to_corner(UL)
+        self.play(Write(title))
+
+        tri = VertexPolygon((1, 2, 0), (-2, -0.3, 0), (2, -1.3, 0), color_index=[RED, GREEN, BLUE]).to_corner(UR)
+        
+        self.play(ShowCreation(tri))
+
+        tri.add_point('O', tri.get_mass_center() + 1.6*((np.random.rand(3)-0.8)*np.array([1,1,0])))
+        tri.connect('OA', 'OB', 'OC')
+        tri.set_line_color('OA', RED)
+        tri.set_line_color('OB', GREEN)
+        tri.set_line_color('OC', BLUE)
+        tri.set_dot_color('O', PURPLE)
+        tri.animate_changes(self)
+
+        tip1 = VGroup(
+            TexText("对于任意三角形$\\Delta ABC$，$O$是其中任意一点，"),
+            Tex(
+                "\\textup{若} \\alpha\\overrightarrow{OA}+\\beta\\overrightarrow{OB}+\\gamma\\overrightarrow{OC}=\\overrightarrow{0}",
+                tex_to_color_map = {
+                    "\\overrightarrow{OA}": RED,
+                    "\\overrightarrow{OB}": GREEN,
+                    "\\overrightarrow{OC}": BLUE
+                }
+            ),
+            Tex(
+                "\\textup{则} S_{\\Delta OBC}:S_{\\Delta OCA}:S_{\\Delta OAB}=\\alpha : \\beta : \\gamma",
+                tex_to_color_map = {
+                    "S_{\\Delta OBC}": RED,
+                    "S_{\\Delta OCA}": GREEN,
+                    "S_{\\Delta OAB}": BLUE,
+                    "\\alpha": RED,
+                    "\\beta": GREEN,
+                    "\\gamma": BLUE
+                }
+            )
+        ).arrange(DOWN).scale(0.8).next_to(title, DOWN).to_edge(LEFT)
+        for t in tip1.submobjects:
+            t.to_edge(LEFT)
+        self.play(Write(tip1))
+
+        triangles = VGroup(
+            Polygon(tri.get_point('O'), tri.get_point('B'), tri.get_point('C'), stroke_width=0, color=RED, fill_color=RED, fill_opacity=0.5).scale(0.9),
+            Polygon(tri.get_point('O'), tri.get_point('C'), tri.get_point('A'), stroke_width=0, color=GREEN, fill_color=GREEN, fill_opacity=0.5).scale(0.9),
+            Polygon(tri.get_point('O'), tri.get_point('A'), tri.get_point('B'), stroke_width=0, color=BLUE, fill_color=BLUE, fill_opacity=0.5).scale(0.9),
+        )
+        self.play(ShowCreation(triangles))
+
+        self.wait(4)
+
+        self.play(Uncreate(triangles))
+
+        question = TexText("怎么证明呢？", color=RED).next_to(tip1, DOWN).to_edge(LEFT)
+        self.play(Write(question))
+        self.wait(2)
+        self.play(FadeOut(tip1), FadeOut(question))
+
+        # Proof part
+
+        proof_sign = TexText("证：").next_to(title, DOWN).to_edge(LEFT)
+        self.play(Write(proof_sign))
+
+        # Calculate alpha,beta,gamma using matrix to solve a set of equations.
+
+        vecOA = tri.get_point('A')-tri.get_point('O')
+        vecOB = tri.get_point('B')-tri.get_point('O')
+        vecOC = tri.get_point('C')-tri.get_point('O')
+        matrix: np.ndarray = -np.array([vecOB[0:2], vecOC[0:2]]).transpose()
+        betagamma = np.linalg.inv(matrix) @ vecOA[0:2]
+        abg: np.ndarray = np.array([1, betagamma[0], betagamma[1]])
+        abg /= 1.5 * np.linalg.norm(abg)
+
+        tri.add_point('D', tri.get_point('O') + abg[0]*vecOA)
+        tri.add_point('E', tri.get_point('O') + abg[1]*vecOB)
+        tri.add_point('F', tri.get_point('O') + abg[2]*vecOC)
+        tri.set_dot_color('D', YELLOW)
+        tri.set_dot_color('E', PINK)
+        tri.set_dot_color('F', ORANGE)
+        tri.connect('DE', 'EF', 'FD')
+        tri.animate_changes(self)
+
+        tri.generate_target()
+        tri.target.scale(1.3).to_corner(UR)
+        self.play(MoveToTarget(tri))
+
+        proof_1 = Tex(
+            "\\textup{作} \\overrightarrow{OD}=\\alpha\\overrightarrow{OA}, \\overrightarrow{OE}=\\beta\\overrightarrow{OB}, \\overrightarrow{OF}=\\gamma\\overrightarrow{OC}",
+            tex_to_color_map={
+                "\\overrightarrow{OA}": RED,
+                "\\overrightarrow{OB}": GREEN,
+                "\\overrightarrow{OC}": BLUE,
+                "\\overrightarrow{OD}": YELLOW,
+                "\\overrightarrow{OE}": PINK,
+                "\\overrightarrow{OF}": ORANGE
+            }
+        ).scale(0.8).next_to(proof_sign, DOWN).to_edge(LEFT)
+        self.play(Write(proof_1))
+        self.embed()
+
 
     def cross_introduce(self):
         title = TexText("平面向量", "的“叉积”").scale(1.2)
@@ -301,7 +427,7 @@ class Vec2Cross(Scene):
         title0_backup = title[0].copy()
 
         self.play(
-            Transform(title[0], title_replacement),
+            TransformMatchingShapes(title[0], title_replacement),
             Transform(tip1, tip1_2),
             Uncreate(title_question),
             MoveToTarget(title[1])
@@ -407,8 +533,8 @@ class Vec2Cross(Scene):
         self.play(Uncreate(axe), Uncreate(vec_objs), Uncreate(poly))
         self.camera.frame.to_default_state()
 
-        self.play(FadeOut(tip4), FadeOut(tip2), Transform(title[0], title0_backup))
-        title[0].fix_in_frame()
+        self.play(FadeOut(tip4), FadeOut(tip2), TransformMatchingShapes(title_replacement, title0_backup))
+        title0_backup.fix_in_frame()
         self.wait(1)
 
         self.camera.frame.reorient(45, 70, 0)
@@ -501,10 +627,15 @@ class Vec2Cross(Scene):
             self.play(Write(t))
 
         self.wait(1)
-        
+
+        notice = TexText("注意：严格来讲，叉积的定义式应该是后者（坐标式），前者只是推论；但这两个命题等价，为方便理解，这里从三角函数开始定义。").fix_in_frame().scale(0.5).to_edge(DOWN)
+        self.play(Write(notice))
+        self.wait(5)
+        self.play(FadeOut(notice))
+
         formula = tip7[2]
         tip7.remove(formula)
-        self.play(Uncreate(tip7), Uncreate(tip6), Uncreate(tip5), Uncreate(vecs), Uncreate(area_num), Uncreate(poly), Uncreate(title))
+        self.play(Uncreate(tip7), Uncreate(tip6), Uncreate(tip5), Uncreate(vec0), Uncreate(vec1), Uncreate(area_num), Uncreate(poly), Uncreate(title[1]), Uncreate(title0_backup))
         
         formula.generate_target()
         formula.target.scale(2)
@@ -514,23 +645,248 @@ class Vec2Cross(Scene):
         self.play(MoveToTarget(formula), Write(append_text))
 
         self.showCountdown(5)
-        self.play(FadeOut(group))
+        self.play(FadeOut(group), FadeOut(formula))
 
-    def showTriangle(self):
-        tri = VertexPolygon((1.5, 3, 0), (-3, -0.5, 0), (3, -1.5, 0), color_index=[RED, GREEN, BLUE]).center()
+    def cross_properties(self):
+        tip1 = VGroup(
+            TexText("第一性质："),
+            TexText("向量自己叉乘自己，或叉乘平行于自己的向量，结果等于0"),
+            TexText("这个很好理解，因为两个向量方向重合，"),
+            TexText("张开的“平行四边形”就是一条直线。")
+        ).fix_in_frame().arrange(DOWN).scale(0.8).to_corner(UL)
+        for t in tip1.submobjects:
+            t.to_edge(LEFT)
+        self.play(Write(tip1))
+        self.wait(2)
+
+        formula = Tex(
+            "\\overrightarrow{a}", "\\times", "\\overrightarrow{a}", "=",
+            "x_1y_1-x_1y_1", "=0",
+            tex_to_color_map = {"\\overrightarrow{a}": BLUE, "x_1y_1-x_1y_1": BLUE}
+        ).fix_in_frame()
+        self.play(Write(formula))
+        self.wait(2)
+
+        self.play(FadeOut(tip1), FadeOut(formula))
+
+        tip2 = VGroup(
+            TexText("第二性质："),
+            TexText("叉乘具有反交换律"),
+            TexText("所谓反交换律，就是减法交换运算数时的性质。"),
+            TexText("也就是说：")
+        ).fix_in_frame().arrange(DOWN).scale(0.8).to_corner(UL)
+        for t in tip2.submobjects:
+            t.to_edge(LEFT)
+        self.play(Write(tip2))
+
+        formula = Tex(
+            "\\overrightarrow{a}", "\\times", "\\overrightarrow{b}", "=",
+            "x_1", "y_2", "-", "x_2", "y_1",
+            tex_to_color_map={
+                "\\overrightarrow{a}": RED,
+                "\\overrightarrow{b}": BLUE,
+                "x_1": RED,
+                "y_1": RED,
+                "x_2": BLUE,
+                "y_2": BLUE
+            }
+        )
+        formula2 = Tex(
+            "\\overrightarrow{a}", "\\times", "\\overrightarrow{b}", "=",
+            "-", "(", "x_2", "y_1", "-", "x_1", "y_2", ")",
+            tex_to_color_map={
+                "\\overrightarrow{a}": RED,
+                "\\overrightarrow{b}": BLUE,
+                "x_1": RED,
+                "y_1": RED,
+                "x_2": BLUE,
+                "y_2": BLUE
+            }
+        )
+        formula_addon = Tex(
+            "=", "-", "\\overrightarrow{b}", "\\times", "\\overrightarrow{a}",
+            tex_to_color_map={
+                "\\overrightarrow{a}": RED,
+                "\\overrightarrow{b}": BLUE,
+            }
+        ).next_to(formula2[3], DOWN, aligned_edge=LEFT)
+        self.play(Write(formula))
+        self.wait(1)
+        self.play(TransformMatchingTex(formula, formula2))
+        self.wait(1)
+        self.play(Write(formula_addon))
+        self.wait(3)
+
+        self.play(FadeOut(formula2), FadeOut(formula_addon), Uncreate(tip2))
+        tip3 = VGroup(
+            TexText("第三性质："),
+            TexText("叉乘具有分配律"),
+            TexText("这就没有上面几个明显了。"),
+            TexText("先从代数的角度推一遍：")
+        ).fix_in_frame().arrange(DOWN).scale(0.8).to_corner(UL)
+        for t in tip3.submobjects:
+            t.to_edge(LEFT)
+        self.play(Write(tip3))
+        self.wait(1)
+
+        color_map = {
+            "\\overrightarrow{a}": RED,
+            "\\overrightarrow{b}": GREEN,
+            "\\overrightarrow{c}": BLUE,
+            "x_1": RED,
+            "y_1": RED,
+            "x_2": GREEN,
+            "y_2": GREEN,
+            "x_3": BLUE,
+            "y_3": BLUE
+        }
+        formula = VGroup(
+            Tex(
+                "\\overrightarrow{a}", "\\times",
+                "(", "\\overrightarrow{b}", "+", "\\overrightarrow{c}", ")",
+                tex_to_color_map = color_map
+            ),
+            Tex(
+                "=", "x_1(y_2+y_3)-(x_2+x_3)y_1",
+                isolate=["(", ")"], tex_to_color_map = color_map
+            ),
+            Tex(
+                "=", "\\overrightarrow{a}\\times\\overrightarrow{b} + \\overrightarrow{a}\\times\\overrightarrow{c}",
+                tex_to_color_map = color_map
+            )
+        ).arrange(DOWN)
+        for t in formula.submobjects:
+            t.to_edge(LEFT)
+        formula[0].next_to(formula[1][1], UP, aligned_edge=LEFT)
+        formula.move_to([0, -0.6, 0])
+
+        self.play(Write(VGroup(formula[0], formula[1])))
+        self.wait(2)
+
+        formula1_trans = Tex(
+            "=", "x_1y_2+x_1y_3-x_2y_1-x_3y_1",
+            tex_to_color_map = color_map
+        ).move_to(formula[1], aligned_edge=LEFT)
+
+        formula1_trans2 = Tex(
+            "=", "(x_1y_2-x_2y_1)+(x_1y_3-x_3y_1)",
+            tex_to_color_map = color_map
+        ).move_to(formula[1], aligned_edge=LEFT)
+
+        self.play(TransformMatchingTex(formula[1], formula1_trans))
+        self.wait(3)
+        self.play(TransformMatchingTex(formula1_trans, formula1_trans2))
+        self.wait(2)
+        self.play(Write(formula[2]))
+        self.wait(2)
+        self.play(Uncreate(VGroup(formula[0], formula[2])), Uncreate(formula1_trans2), Uncreate(tip3[3]))
         
-        self.play(ShowCreation(tri))
+        tip3_1 = VGroup(
+            TexText("也许你还没有反应过来，"),
+            TexText("那没办法，代数真的太抽象了。"),
+            TexText("接下来就通过几何，"),
+            TexText("直观地证明一下。")
+        ).fix_in_frame().arrange(DOWN).scale(0.8).next_to(tip3[2], DOWN)
+        for t in tip3_1.submobjects:
+            t.to_edge(LEFT)
+        self.play(Write(tip3_1))
 
-        tri.add_point('O', tri.get_grav_center())
-        tri.connect('OA', 'OB', 'OC')
-        tri.set_dot_color('O', PURPLE)
+        self.camera.frame.move_to([-1, 0.5, 0])
 
-        tri.animate_changes(self)
+        vecs = np.array([[2, -1, 0], [2, 1, 0], [0, 2, 0]])
 
-        tri.move_dot('C', [1, 0, 0])
-        tri.move_dot('O', tri.get_grav_center())
+        arrow1 = Arrow(ORIGIN, vecs[0], buff=0).set_color(RED)
+        arrow2 = Arrow(vecs[0], vecs[0]+vecs[1], buff=0).set_color(GREEN)
+        arrow3 = Arrow(ORIGIN, vecs[0]+vecs[1], buff=0).set_color(YELLOW)
 
-        tri.animate_changes(self)
+        per_vec = Vector(vecs[2], buff=0).set_color(BLUE)
+
+        poly1: Polygon = Polygon(
+            ORIGIN, arrow1.get_end(), arrow1.get_end()+per_vec.get_end(), per_vec.get_end(),
+            stroke_width=1, color=PINK, fill_color=PINK, fill_opacity=0.6
+        )
+        poly2: Polygon = Polygon(
+            arrow1.get_end(), arrow2.get_end(), arrow2.get_end()+per_vec.get_end(), arrow1.get_end()+per_vec.get_end(),
+            stroke_width=1, color=BLUE, fill_color=BLUE, fill_opacity=0.6
+        )
+        poly3: Polygon = Polygon( 
+            ORIGIN, arrow2.get_end(), arrow2.get_end()+per_vec.get_end(), per_vec.get_end(),
+            stroke_width=1, color=ORANGE, fill_color=ORANGE, fill_opacity=0.6
+        )
+
+        def arrow3_updater_func(m: Arrow, dt):
+            m.put_start_and_end_on(ORIGIN, arrow2.get_end())
+        arrow3.add_updater(arrow3_updater_func)
+
+        def update_arrow2_func(m: Arrow, dt):
+            m.put_start_and_end_on(arrow1.get_end(), arrow1.get_end()+vecs[1])
+        arrow2.add_updater(update_arrow2_func)
+
+        def update_polygons(vecs):
+            poly1.target = Polygon(
+                ORIGIN, vecs[0], vecs[0]+vecs[2], vecs[2],
+                stroke_width=1, color=PINK, fill_color=PINK, fill_opacity=0.6
+            )
+            poly2.target = Polygon(
+                vecs[0], vecs[0]+vecs[1], vecs[0]+vecs[1]+vecs[2], vecs[0]+vecs[2],
+                stroke_width=1, color=BLUE, fill_color=BLUE, fill_opacity=0.6
+            )
+            poly3.target = Polygon( 
+                ORIGIN, vecs[0]+vecs[1], vecs[0]+vecs[1]+vecs[2], vecs[2],
+                stroke_width=1, color=ORANGE, fill_color=ORANGE, fill_opacity=0.6
+            )
+
+        geoTotal = VGroup(arrow1, arrow2, arrow3, per_vec, poly1, poly2, poly3)
+
+        self.play(ShowCreation(geoTotal))
+
+        new_vec0 = np.array([3, -1, 0])
+        arrow1.target = Arrow(ORIGIN, new_vec0, buff=0).set_color(RED)
+
+        update_polygons([new_vec0, vecs[1], vecs[2]])
+        self.play(MoveToTarget(arrow1), MoveToTarget(poly1), MoveToTarget(poly2), MoveToTarget(poly3), run_time=3)
+
+        arrow2.remove_updater(update_arrow2_func)
+        vecs[0] = new_vec0
+
+        new_vec1 = np.array([1, 2.5, 0])
+        arrow2.target = Arrow(vecs[0], vecs[0]+new_vec1, buff=0).set_color(GREEN)
+
+        update_polygons([vecs[0], new_vec1, vecs[2]])
+        self.play(MoveToTarget(arrow2), MoveToTarget(poly1), MoveToTarget(poly2), MoveToTarget(poly3), run_time=3)
+
+        vecs[1] = new_vec1
+
+        tip3_2 = VGroup(
+            TexText("发现没有？"),
+            TexText("粉红色区域", "的面积与", "蓝色区域", "的面积之和，"),
+            TexText("始终等于", "橙色区域", "的面积。")
+        ).fix_in_frame().arrange(DOWN).next_to(tip3_1, DOWN).to_edge(LEFT)
+        for t in tip3_2.submobjects:
+            t.to_edge(LEFT)
+        tip3_2[1][0].set_color(PINK)
+        tip3_2[1][2].set_color(BLUE)
+        tip3_2[2][1].set_color(ORANGE)
+        self.play(Write(tip3_2))
+
+        tip3_3 = TexText("虽说还有种例外情况，").fix_in_frame().scale(0.8).next_to(tip3_2, DOWN).to_edge(LEFT)
+        self.play(Write(tip3_3))
+
+        new_vec1 = np.array([-0.5, 2.5, 0])
+        arrow2.target = Arrow(vecs[0], vecs[0]+new_vec1, buff=0).set_color(GREEN)
+
+        update_polygons([vecs[0], new_vec1, vecs[2]])
+        self.play(MoveToTarget(arrow2), MoveToTarget(poly1), MoveToTarget(poly2), MoveToTarget(poly3), run_time=3)
+
+        vecs[1] = new_vec1
+
+        tip3_4 = TexText("但不要忘记叉积的正负自动摆平了这个问题。").fix_in_frame().scale(0.8).next_to(tip3_3, RIGHT)
+        self.play(Write(tip3_4))
+        self.play(Indicate(tip3_4))
+
+        self.wait(5)
+
+        self.play(Uncreate(geoTotal), FadeOut(VGroup(tip3, tip3_1, tip3_2, tip3_3, tip3_4)))
 
     def showCountdown(self, seconds):
         countDownObj = Tex(str(seconds), color=BLUE).to_corner(DR)
