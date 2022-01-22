@@ -1,4 +1,5 @@
 import math
+from pydoc_data import topics
 import numpy as np
 from manimlib import *
 from typing import Any, Dict, Tuple, List, Optional
@@ -283,9 +284,195 @@ def cross_vec2(a, b):
 
 class Vec2Cross(Scene):
     def construct(self):
-        self.introduce_benz_theorem()
+        #self.introduce_benz_theorem()
         #self.cross_introduce()
         #self.cross_properties()
+        self.proof_benz_theorem()
+
+    def proof_benz_theorem(self):
+        tip1 = TexText("现在，让我们回到奔驰定理的证明上来。")
+        self.play(Write(tip1))
+        self.play(tip1.to_edge, UP)
+
+        tri = VertexPolygon((1, 2, 0), (-2, -0.3, 0), (2, -1.3, 0), color_index=[RED, GREEN, BLUE]).center()
+        self.play(ShowCreation(tri))
+
+        tri.add_point('O', tri.get_mass_center() + 1.6*((np.random.rand(3)-0.8)*np.array([1,1,0])))
+        tri.connect('OA', 'OB', 'OC')
+        tri.set_line_color('OA', RED)
+        tri.set_line_color('OB', GREEN)
+        tri.set_line_color('OC', BLUE)
+        tri.set_dot_color('O', PURPLE)
+        tri.animate_changes(self)
+
+        self.play(tri.to_edge, RIGHT)
+
+        known_and_to_proof = VGroup(
+            Tex(
+                "\\textup{已知：}", "\\alpha\\overrightarrow{OA}+\\beta\\overrightarrow{OB}+\\gamma\\overrightarrow{OC}=\\overrightarrow{0}",
+                tex_to_color_map = {
+                    "\\overrightarrow{OA}": RED,
+                    "\\overrightarrow{OB}": GREEN,
+                    "\\overrightarrow{OC}": BLUE
+                }
+            ),
+            Tex(
+                "\\textup{求证：}S_{\\bigtriangleup OBC}:S_{\\bigtriangleup OCA}:S_{\\bigtriangleup OAB}=\\alpha : \\beta : \\gamma",
+                tex_to_color_map = {
+                    "S_{\\bigtriangleup OBC}": RED,
+                    "S_{\\bigtriangleup OCA}": GREEN,
+                    "S_{\\bigtriangleup OAB}": BLUE,
+                    "\\alpha": RED,
+                    "\\beta": GREEN,
+                    "\\gamma": BLUE
+                }
+            )
+        ).arrange(DOWN).next_to(tip1, DOWN).to_edge(LEFT)
+        for t in known_and_to_proof.submobjects:
+            t.to_edge(LEFT)
+        
+        self.play(Write(known_and_to_proof))
+
+        formula = Tex(
+            "\\alpha\\overrightarrow{OA}+\\beta\\overrightarrow{OB}+\\gamma\\overrightarrow{OC}=\\overrightarrow{0}",
+            tex_to_color_map = {
+                "\\overrightarrow{OA}": RED,
+                "\\overrightarrow{OB}": GREEN,
+                "\\overrightarrow{OC}": BLUE
+            }
+        ).move_to([0, -2, 0])
+
+        self.play(TransformMatchingTex(known_and_to_proof[0].copy(), formula))
+        self.wait(1)
+
+        tip1 = TexText("现在，让我们开始利用“叉积”秒杀", tex_to_color_map={"秒杀": RED}).next_to(formula, DOWN)
+        self.play(Write(tip1))
+        self.wait(1)
+
+        tip2 = TexText("不要眨眼！", color=RED).move_to(tip1)
+        self.play(ReplacementTransform(tip1, tip2))
+        self.wait(2)
+        self.play(FadeOut(tip2))
+
+        formula2 = Tex(
+            "\\overrightarrow{OA} \\times (\\alpha\\overrightarrow{OA}+\\beta\\overrightarrow{OB}+\\gamma\\overrightarrow{OC})=0",
+            isolate = ["(", ")"],
+            tex_to_color_map = {
+                "\\overrightarrow{OA}": RED,
+                "\\overrightarrow{OB}": GREEN,
+                "\\overrightarrow{OC}": BLUE
+            }
+        ).move_to(formula)
+
+        formula3 = Tex(
+            "\\alpha\\overrightarrow{OA}\\times\\overrightarrow{OA}+\\beta\\overrightarrow{OA}\\times\\overrightarrow{OB}+\\gamma\\overrightarrow{OA}\\times\\overrightarrow{OC}=0",
+            tex_to_color_map = {
+                "\\overrightarrow{OA}": RED,
+                "\\overrightarrow{OB}": GREEN,
+                "\\overrightarrow{OC}": BLUE
+            }
+        ).move_to(formula2)
+
+        self.play(TransformMatchingTex(formula, formula2))
+        self.wait(2)
+        self.play(TransformMatchingTex(formula2, formula3))
+        self.wait(2)
+
+        formula3_center_pos = formula3.get_center()
+
+        formula3_left = VGroup(formula3[:4])
+        formula3_right = VGroup(formula3[4:])
+
+        self.play(FadeOut(formula3_left, shift=DOWN), formula3_right.animate.move_to(formula3_center_pos))
+
+        formula4 = Tex(
+            "\\beta\\overrightarrow{OA}\\times\\overrightarrow{OB}+\\gamma\\overrightarrow{OA}\\times\\overrightarrow{OC}=0",
+            tex_to_color_map = {
+                "\\overrightarrow{OA}": RED,
+                "\\overrightarrow{OB}": GREEN,
+                "\\overrightarrow{OC}": BLUE
+            }
+        ).move_to(formula3)
+
+        formula5 = Tex(
+            "\\beta\\overrightarrow{OA}\\times\\overrightarrow{OB}=-\\gamma\\overrightarrow{OA}\\times\\overrightarrow{OC}",
+            tex_to_color_map = {
+                "\\overrightarrow{OA}": RED,
+                "\\overrightarrow{OB}": GREEN,
+                "\\overrightarrow{OC}": BLUE
+            }
+        ).move_to(formula3)
+
+        formula6 = Tex(
+            "\\beta\\overrightarrow{OA}\\times\\overrightarrow{OB}=\\gamma\\overrightarrow{OC}\\times\\overrightarrow{OA}",
+            tex_to_color_map = {
+                "\\overrightarrow{OA}": RED,
+                "\\overrightarrow{OB}": GREEN,
+                "\\overrightarrow{OC}": BLUE
+            }
+        ).move_to(formula3)
+
+        self.play(TransformMatchingShapes(formula3_right, formula4))
+        self.wait(2)
+        self.play(TransformMatchingTex(formula4, formula5))
+        self.wait(1)
+        self.play(TransformMatchingTex(formula5, formula6))
+        self.wait(2)
+
+        color_map = {
+            "\\alpha": RED,
+            "\\beta": GREEN,
+            "\\gamma": BLUE,
+            "S_{\\bigtriangleup OBC}": RED,
+            "S_{\\bigtriangleup OCA}": GREEN,
+            "S_{\\bigtriangleup OAB}": BLUE
+        }
+        
+        formula7 = Tex(
+            "\\pm 2\\beta S_{\\bigtriangleup OAB}=\\pm 2\\gamma S_{\\bigtriangleup OCA}",
+            isolate = ["2"],
+            tex_to_color_map = color_map
+        ).move_to(formula6)
+
+        tip3 = TexText("注意：此时，由于两边都是逆时针乘向量，所以两边应该同号").scale(0.8).next_to(formula7, DOWN)
+        tip4 = TexText("还记得“叉积”的绝对值代表什么么？").scale(0.8).next_to(formula7, DOWN)
+
+        self.play(Write(tip3))
+        self.wait(1)
+        self.play(ReplacementTransform(tip3, tip4))
+        self.wait(2)
+        self.play(TransformMatchingTex(formula6, formula7))
+        self.wait(1)
+        self.play(Uncreate(tip4))
+
+        formula8 = Tex(
+            "\\beta S_{\\bigtriangleup OAB}=\\gamma S_{\\bigtriangleup OCA}",
+            tex_to_color_map = color_map
+        ).move_to(formula7)
+        self.play(TransformMatchingTex(formula7, formula8))
+
+        self.wait(1)
+
+        self.play(formula8.animate.next_to(known_and_to_proof, DOWN).to_edge(LEFT))
+
+        tip5 = TexText("同理可得：").next_to(formula8, DOWN).to_edge(LEFT)
+        self.play(Write(tip5))
+
+        popularize_formula = VGroup(
+            Tex(
+                "\\gamma S_{\\bigtriangleup OBC}=\\alpha S_{\\bigtriangleup OAB}",
+                tex_to_color_map = color_map
+            ),
+            Tex(
+                "\\alpha S_{\\bigtriangleup OCA}=\\beta S_{\\bigtriangleup OBC}",
+                tex_to_color_map = color_map
+            )
+        ).arrange(DOWN).next_to(tip5, DOWN).to_edge(LEFT)
+        for t in popularize_formula.submobjects:
+            t.to_edge(LEFT)
+        self.play(FadeIn(popularize_formula, shift=DOWN))
+
+        self.embed()
 
     def introduce_benz_theorem(self):
         intro = VGroup(
@@ -315,7 +502,7 @@ class Vec2Cross(Scene):
         tri.animate_changes(self)
 
         tip1 = VGroup(
-            TexText("对于任意三角形$\\Delta ABC$，$O$是其中任意一点，"),
+            TexText("对于任意三角形$\\bigtriangleup ABC$，$O$是其中任意一点，"),
             Tex(
                 "\\textup{若} \\alpha\\overrightarrow{OA}+\\beta\\overrightarrow{OB}+\\gamma\\overrightarrow{OC}=\\overrightarrow{0}",
                 tex_to_color_map = {
@@ -325,11 +512,11 @@ class Vec2Cross(Scene):
                 }
             ),
             Tex(
-                "\\textup{则} S_{\\Delta OBC}:S_{\\Delta OCA}:S_{\\Delta OAB}=\\alpha : \\beta : \\gamma",
+                "\\textup{则} S_{\\bigtriangleup OBC}:S_{\\bigtriangleup OCA}:S_{\\bigtriangleup OAB}=\\alpha : \\beta : \\gamma",
                 tex_to_color_map = {
-                    "S_{\\Delta OBC}": RED,
-                    "S_{\\Delta OCA}": GREEN,
-                    "S_{\\Delta OAB}": BLUE,
+                    "S_{\\bigtriangleup OBC}": RED,
+                    "S_{\\bigtriangleup OCA}": GREEN,
+                    "S_{\\bigtriangleup OAB}": BLUE,
                     "\\alpha": RED,
                     "\\beta": GREEN,
                     "\\gamma": BLUE
@@ -394,9 +581,35 @@ class Vec2Cross(Scene):
                 "\\overrightarrow{OE}": PINK,
                 "\\overrightarrow{OF}": ORANGE
             }
-        ).scale(0.8).next_to(proof_sign, DOWN).to_edge(LEFT)
+        ).scale(0.4).next_to(proof_sign, DOWN).to_edge(LEFT)
         self.play(Write(proof_1))
-        self.embed()
+
+        proof_total = VGroup(
+            TexText("我们可以很容易知道"),
+            Tex("S_{\\bigtriangleup OAB}=\\frac{S_{\\bigtriangleup ODE}}{\\alpha \\beta}"),
+            Tex("S_{\\bigtriangleup OBC}=\\frac{S_{\\bigtriangleup OEF}}{\\beta \\gamma}"),
+            Tex("S_{\\bigtriangleup OCA}=\\frac{S_{\\bigtriangleup OFD}}{\\gamma \\alpha}"),
+            TexText("而且因为$\\overrightarrow{OD}+\\overrightarrow{OE}+\\overrightarrow{OF}=\\overrightarrow{0}$，可以知道$O$是$\\bigtriangleup DEF$的重心"),
+            Tex("\\textup{也就是说，} S_{\\bigtriangleup ODE}=S_{\\bigtriangleup OEF}=S_{\\bigtriangleup OFD}"),
+            Tex("\\textup{这样一来，} \\alpha \\beta S_{\\bigtriangleup OAB} = \\beta \\gamma S_{\\bigtriangleup OBC} = \\gamma \\alpha S_{\\bigtriangleup OCA}"),
+            TexText("三项均除以$\\alpha \\beta \\gamma $，得到表达式"),
+            Tex("\\frac{S_{\\bigtriangleup OAB}}{\\gamma} = \\frac{S_{\\bigtriangleup OBC}}{\\alpha} = \\frac{S_{\\bigtriangleup OCA}}{\\beta}"),
+            Tex("\\textup{即} S_{\\bigtriangleup OBC}:S_{\\bigtriangleup OCA}:S_{\\bigtriangleup OAB}=\\alpha : \\beta : \\gamma")
+        ).arrange(DOWN).scale(0.4).next_to(proof_1, DOWN).to_edge(LEFT)
+        for t in proof_total.submobjects:
+            t.to_edge(LEFT)
+        self.play(Write(proof_total), run_time=2)
+        self.wait(1)
+
+        tip2 = VGroup(
+            TexText("稍等一下？我知道可能有些太快了，但这个视频的重点不是这种证法。"),
+            TexText("这个视频要讲的，是一种利用平面向量的“叉积”迅速秒杀的证法。")
+        ).arrange(DOWN).scale(0.8).next_to(proof_total, DOWN).to_edge(LEFT)
+        for t in tip2.submobjects:
+            t.to_edge(LEFT)
+        self.play(Write(tip2))
+        self.showCountdown(5)
+        self.play(*[FadeOut(x) for x in self.mobjects if not isinstance(x, CameraFrame)])
 
 
     def cross_introduce(self):
@@ -838,7 +1051,7 @@ class Vec2Cross(Scene):
 
         geoTotal = VGroup(arrow1, arrow2, arrow3, per_vec, poly1, poly2, poly3)
 
-        self.play(ShowCreation(geoTotal))
+        self.play(*[ShowCreation(x) for x in [poly1, poly2, poly3, arrow1, arrow2, arrow3, per_vec]])
 
         new_vec0 = np.array([3, -1, 0])
         arrow1.target = Arrow(ORIGIN, new_vec0, buff=0).set_color(RED)
@@ -887,6 +1100,76 @@ class Vec2Cross(Scene):
         self.wait(5)
 
         self.play(Uncreate(geoTotal), FadeOut(VGroup(tip3, tip3_1, tip3_2, tip3_3, tip3_4)))
+        self.camera.frame.to_default_state()
+
+        tip4 = VGroup(
+            TexText("第四性质："),
+            TexText("单次叉乘与数乘间存在结合律"),
+            TexText("鉴于这个特别好理解，这里就仅放公式证明。")
+        ).fix_in_frame().arrange(DOWN).to_corner(UL)
+        for t in tip4.submobjects:
+            t.to_edge(LEFT)
+
+        self.play(Write(tip4))
+        self.wait(2)
+
+        color_map = {
+            "\\overrightarrow{a}": RED,
+            "\\overrightarrow{b}": BLUE,
+            "x_1": RED,
+            "y_1": RED,
+            "x_2": BLUE,
+            "y_2": BLUE
+        }
+        formula4 = VGroup(
+            Tex(
+                "(k\\overrightarrow{a}) \\times \\overrightarrow{b}",
+                isolate = ["(", ")"],
+                tex_to_color_map = color_map
+            ),
+            Tex(
+                "=", "(kx_1)y_2-x_2(ky_1)",
+                isolate = ["(", ")"],
+                tex_to_color_map = color_map
+            ),
+            Tex(
+                "=", "\\overrightarrow{a} \\times (k\\overrightarrow{b})",
+                isolate = ["(", ")"],
+                tex_to_color_map = color_map
+            )
+        ).arrange(DOWN).to_edge(LEFT)
+        for t in formula4.submobjects:
+            t.to_edge(LEFT)
+        formula4[0].move_to(formula4[1], aligned_edge=LEFT, coor_mask=np.array([1, 0, 0]))
+        formula4.center()
+
+        self.play(Write(formula4[0]))
+        self.wait(1)
+        self.play(Write(formula4[1]))
+        self.wait(1)
+
+        formula4_1_new = Tex(
+            "=", "x_1(ky_2)-(kx_2)y_1",
+            isolate = ["(", ")"],
+            tex_to_color_map = color_map
+        )
+        self.play(TransformMatchingTex(formula4[1], formula4_1_new))
+        self.wait(1)
+        self.play(Write(formula4[2]))
+        self.wait(3)
+
+        self.play(*[FadeOut(x) for x in self.mobjects if not isinstance(x, CameraFrame)])
+        self.camera.frame.to_default_state()
+
+        chapter_ending = VGroup(
+            TexText("希望你记住了这四个性质。"),
+            TexText("接下来，这四个性质会被频繁使用，"),
+            TexText("我也不会再特别说明。")
+        ).arrange(DOWN)
+        self.play(Write(chapter_ending))
+        self.showCountdown(3)
+        self.play(FadeOut(chapter_ending))
+
 
     def showCountdown(self, seconds):
         countDownObj = Tex(str(seconds), color=BLUE).to_corner(DR)
